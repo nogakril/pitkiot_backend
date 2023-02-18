@@ -1,0 +1,179 @@
+openapi: 3.0.3
+info:
+  title: Pitkiot - OpenAPI 3.0
+  description: |-
+    This document describes the five endpoints that the Pitkiot game system should support.
+    Each section has just one endpoint that should be implemented in the AWS Lambdas.
+  version: 1.0.0
+tags:
+  - name: game-creator
+    description: Fetching a new game id
+  - name: team-getter
+    description: Fetching a new player's team
+  - name: players-getter
+    description: Fetching all of the game's players
+  - name: word-adder
+    description: Adding a word to the Pitkiot game
+  - name: words-getter
+    description: Fetching the game's list of words
+
+paths:
+  /:
+    post:
+      servers:
+        - url: https://ENTER_GAME_CREATOR_LAMBDA_URL
+      tags:
+        - game-creator
+      summary: Generate a new Pitkiot game ID
+      description: Generate a game ID, add it to the database and return this ID as a PIN used to join the game session
+      operationId: gameCreator
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameCreationResponse'
+  /players:
+    put:
+      servers:
+        - url: https://ENTER_TEAM_GETTER_LAMBDA_URL
+      tags:
+        - team-getter
+      summary: Fetch a new player's team
+      description: Add a new player to the game's database by his nickname and return his team
+      operationId: teamGetter
+      parameters:
+        - in: query
+          name: gameId
+          schema:
+            type: string
+          required: true
+          description: The game ID that was returned when the game creator was called
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamGetter'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamGetterResponse'
+    get:
+      servers:
+        - url: https://ENTER_PLAYERS_GETTER_LAMBDA_URL
+      tags:
+        - players-getter
+      summary: Fetch a game's players list
+      description: Get the list of nicknames of players that belong to a game by the game's ID
+      operationId: playersGetter
+      parameters:
+        - in: query
+          name: gameId
+          schema:
+            type: string
+          required: true
+          description: The game ID that was returned when the game creator was called
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlayersGetterResponse'
+  /words:
+    put:
+      servers:
+        - url: https://ENTER_WORD_ADDER_LAMBDA_URL
+      tags:
+        - word-adder
+      summary: Add a new word to the game
+      description: Add a new word written by a player to the the game in the DB under the game's ID
+      operationId: wordAdder
+      parameters:
+        - in: query
+          name: gameId
+          schema:
+            type: string
+          required: true
+          description: The game ID that was returned when the game creator was called
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WordAdder'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+    get:
+      servers:
+        - url: https://ENTER_WORDS_GETTER_LAMBDA_URL
+      tags:
+        - words-getter
+      summary: Fetch the game's words
+      description: Get all of the game's words added so far by the game's ID
+      operationId: wordsGetter
+      parameters:
+        - in: query
+          name: gameId
+          schema:
+            type: string
+          required: true
+          description: The game ID that was returned when the game creator was called
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WordsGetterResponse'
+components:
+  schemas:
+    GameCreationResponse:
+      type: object
+      properties:
+        gameId:
+          type: string
+          example: fd440257-1552-47e7-93a9-87d7f7ae60c8
+    TeamGetter:
+      type: object
+      properties:
+        nickName:
+          type: string
+          example: "omri abend"
+    TeamGetterResponse:
+      type: object
+      properties:
+        team:
+          type: string
+          example: "red"
+          enum:
+            - red
+            - blue
+    PlayersGetterResponse:
+      type: object
+      properties:
+        players:
+          type: array
+          items:
+            type: string
+          example: ["omri abend", "elon musk"]
+    WordAdder:
+      type: object
+      properties:
+        word:
+          type: string
+          example: "bibi"
+    WordsGetterResponse:
+      type: object
+      properties:
+        words:
+          type: array
+          items:
+            type: string
+          example: ["bibi", "sarah"]
