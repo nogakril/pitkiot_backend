@@ -1,0 +1,270 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: Cloudformation template for resources needed for HUJI final project.
+
+Parameters:
+  PairName:
+    Description: The name of the pair working on the exercise.
+    Type: String
+  CodePackageDate:
+    Description: The date of the code package in ms.
+    Type: String
+
+Resources:
+
+  # DynamoDB Pitkiot table
+  PitkiotTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: huji-lightricks-pitkiot
+      AttributeDefinitions:
+        - AttributeName: game_id
+          AttributeType: S
+        - AttributeName: players
+          AttributeType: SS
+        - AttributeName: words
+          AttributeType: SS
+      KeySchema:
+        - AttributeName: game_id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  # Game Creator Lambda
+  GameCreatorLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: huji-lightricks-pitkiot-game-creator-lambda-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: huji-lightricks-pitkiot-game-creator-lambda-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                Resource:
+                  - !GetAtt PitkiotTable.Arn
+
+  GameCreatorLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: huji-lightricks-pitkiot-game-creator-lambda
+      Handler: lambdas.game_creator.handler
+      Role: !GetAtt GameCreatorLambdaRole.Arn
+      Timeout: 25
+      CodeUri:
+        Bucket:
+          Fn::ImportValue: !Sub huji-lightricks-pitkiot-code-${PairName}-bucket-name
+        Key: !Sub ${PairName}-${CodePackageDate}-code-package.zip
+      Runtime: python3.8
+
+  GameCreatorLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${GameCreatorLambdaFunction}
+      RetentionInDays: 3
+
+  # Team Getter Lambda
+  TeamGetterLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: huji-lightricks-pitkiot-team-getter-lambda-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: huji-lightricks-pitkiot-team-getter-lambda-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:UpdateItem
+                Resource:
+                  - !GetAtt PitkiotTable.Arn
+              - Effect: Allow
+                Action:
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt PitkiotTable.Arn
+
+  TeamGetterLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: huji-lightricks-pitkiot-team-getter-lambda
+      Handler: lambdas.team_getter.handler
+      Role: !GetAtt TeamGetterLambdaRole.Arn
+      Timeout: 25
+      CodeUri:
+        Bucket:
+          Fn::ImportValue: !Sub huji-lightricks-pitkiot-code-${PairName}-bucket-name
+        Key: !Sub ${PairName}-${CodePackageDate}-code-package.zip
+      Runtime: python3.8
+
+  TeamGetterLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${TeamGetterLambdaFunction}
+      RetentionInDays: 3
+
+  # Players Getter Lambda
+  PlayersGetterLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: huji-lightricks-pitkiot-players-getter-lambda-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: huji-lightricks-pitkiot-players-getter-lambda-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt PitkiotTable.Arn
+
+  PlayersGetterLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: huji-lightricks-pitkiot-players-getter-lambda
+      Handler: lambdas.players_getter.handler
+      Role: !GetAtt PlayersGetterLambdaRole.Arn
+      Timeout: 25
+      CodeUri:
+        Bucket:
+          Fn::ImportValue: !Sub huji-lightricks-pitkiot-code-${PairName}-bucket-name
+        Key: !Sub ${PairName}-${CodePackageDate}-code-package.zip
+      Runtime: python3.8
+
+  PlayersGetterLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${PlayersGetterLambdaFunction}
+      RetentionInDays: 3
+
+  # Word Adder Lambda
+  WordAdderLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: huji-lightricks-pitkiot-word-adder-lambda-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: huji-lightricks-pitkiot-word-adder-lambda-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                Resource:
+                  - !GetAtt PitkiotTable.Arn
+
+  WordAdderLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: huji-lightricks-pitkiot-word-adder-lambda
+      Handler: lambdas.word_adder.handler
+      Role: !GetAtt WordAdderLambdaRole.Arn
+      Timeout: 25
+      CodeUri:
+        Bucket:
+          Fn::ImportValue: !Sub huji-lightricks-pitkiot-code-${PairName}-bucket-name
+        Key: !Sub ${PairName}-${CodePackageDate}-code-package.zip
+      Runtime: python3.8
+
+  WordAdderLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${WordAdderLambdaFunction}
+      RetentionInDays: 3
+
+  # Words Getter lambda
+  WordsGetterLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: huji-lightricks-pitkiot-words-getter-lambda-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: huji-lightricks-pitkiot-words-getter-lambda-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt PitkiotTable.Arn
+
+  WordsGetterLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: huji-lightricks-pitkiot-words-getter-lambda
+      Handler: lambdas.words_getter.handler
+      Role: !GetAtt WordsGetterLambdaRole.Arn
+      Timeout: 25
+      CodeUri:
+        Bucket:
+          Fn::ImportValue: !Sub huji-lightricks-pitkiot-code-${PairName}-bucket-name
+        Key: !Sub ${PairName}-${CodePackageDate}-code-package.zip
+      Runtime: python3.8
+
+  WordsGetterLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${WordsGetterLambdaFunction}
+      RetentionInDays: 3
