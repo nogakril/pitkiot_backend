@@ -337,7 +337,7 @@ def get_lambdas_urls(stack_name_to_check: str) \
     cloudformation = boto3.resource("cloudformation", region_name=AWS_REGION)
     stack = cloudformation.Stack(stack_name_to_check)
     game_creator_url = None
-    team_getter_url = None
+    player_adder_url = None
     status_setter_url = None
     status_getter_url = None
     players_getter_url = None
@@ -346,8 +346,8 @@ def get_lambdas_urls(stack_name_to_check: str) \
     for output in stack.outputs:
         if output["OutputKey"] == "GameCreatorLambdaURL":
             game_creator_url = output["OutputValue"]
-        if output["OutputKey"] == "TeamGetterLambdaURL":
-            team_getter_url = output["OutputValue"]
+        if output["OutputKey"] == "PlayerAdderLambdaURL":
+            player_adder_url = output["OutputValue"]
         if output["OutputKey"] == "StatusSetterLambdaURL":
             status_setter_url = output["OutputValue"]
         if output["OutputKey"] == "StatusGetterLambdaURL":
@@ -359,7 +359,7 @@ def get_lambdas_urls(stack_name_to_check: str) \
         if output["OutputKey"] == "WordsGetterLambdaURL":
             words_getter_url = output["OutputValue"]
 
-    return game_creator_url, team_getter_url, status_setter_url, status_getter_url, players_getter_url, word_adder_url,\
+    return game_creator_url, player_adder_url, status_setter_url, status_getter_url, players_getter_url, word_adder_url,\
         words_getter_url
 
 
@@ -397,10 +397,10 @@ def main() -> None:
             template_file_path="./cloudformation/pitkiot.yaml",
         )
 
-        game_creator_url, team_getter_url, status_setter_url, status_getter_url, players_getter_url,\
+        game_creator_url, player_adder_url, status_setter_url, status_getter_url, players_getter_url,\
             word_adder_url, words_getter_url = get_lambdas_urls("huji-lightricks-pitkiot-resources")
         print(f"Game creator lambda URL: {game_creator_url}")
-        print(f"Team getter lambda URL: {team_getter_url}")
+        print(f"Player Adder lambda URL: {player_adder_url}")
         print(f"Status setter lambda URL: {status_setter_url}")
         print(f"Status getter lambda URL: {status_getter_url}")
         print(f"Players getter lambda URL: {players_getter_url}")

@@ -2,14 +2,14 @@ openapi: 3.0.3
 info:
   title: Pitkiot - OpenAPI 3.0
   description: |-
-    This document describes the five endpoints that the Pitkiot game system should support.
+    This document describes the endpoints that the Pitkiot game system should support.
     Each section has just one endpoint that should be implemented in the AWS Lambdas.
   version: 1.0.0
 tags:
   - name: game-creator
     description: Fetching a new game id
-  - name: team-getter
-    description: Fetching a new player's team
+  - name: player-adder
+    description: Adding a player to the Pitkiot game
   - name: status-setter
     description: Set a game's status
   - name: status-getter
@@ -47,12 +47,12 @@ paths:
   /players:
     put:
       servers:
-        - url: https://ENTER_TEAM_GETTER_LAMBDA_URL
+        - url: https://ENTER_PLAYER_ADDER_LAMBDA_URL
       tags:
-        - team-getter
-      summary: Fetch a new player's team
-      description: Add a new player to the game's database by his nickname and return his team
-      operationId: teamGetter
+        - player-adder
+      summary: Add a new player
+      description: Add a new player to the game's database by his nickname. nickname should be unique
+      operationId: playerAdder
       parameters:
         - in: query
           name: gameId
@@ -64,7 +64,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TeamGetter'
+              $ref: '#/components/schemas/PlayerAdder'
         required: true
       responses:
         '200':
@@ -72,7 +72,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TeamGetterResponse'
+                $ref: '#/components/schemas/PlayerAdderResponse'
     get:
       servers:
         - url: https://ENTER_PLAYERS_GETTER_LAMBDA_URL
@@ -203,13 +203,13 @@ components:
         gameId:
           type: string
           example: fd440257-1552-47e7-93a9-87d7f7ae60c8
-    TeamGetter:
+    PlayerAdder:
       type: object
       properties:
         nickName:
           type: string
           example: "omri abend"
-    TeamGetterResponse:
+    PlayerAdderResponse:
       type: object
       properties:
         team:

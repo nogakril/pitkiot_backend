@@ -8,35 +8,45 @@ from utils.lambda_exception_handler import LambdaExceptionHandler
 
 def handler(event: Dict[str, Any], _: Any) -> Dict[str, Any]:
     """
-    Lambda handler for the words_getter lambda.
-    Expected input: An event containing a REST API request, with a GET method and no body.
-    Expected output: A JSON-formatted response containing a words list.
+    Lambda handler for the player_adder lambda.
+    Expected input: An event containing a REST API request, with a PUT method, a gameId query parameter
+     and a JSON-formatted body containing a nickName field.
+    Expected output: An empty REST response.
      In case of an error, a status code and an informative message will be returned.
     """
     # check REST method
     method = event.get('requestContext', {}).get('http', {}).get('method', '')
-    if method != "GET":
+    if method != "PUT":
         return {
             'statusCode': 405,
-            'body': json.dumps({'error': 'only GET request allowed'})
+            'body': json.dumps({'error': 'only PUT request allowed'})
         }
 
-    # Get game ID from url
+    # Get game ID from url, nickname from body
     game_id = event.get("queryStringParameters", {}).get("gameId")
-    if not game_id:
+    nickname = json.loads(event.get('body', {})).get('nickName', '')
+    if not game_id or not nickname:
         return {
             'statusCode': 400,
-            'body': json.dumps({'error': 'url must contain gameId parameter.'})
+            'body': json.dumps({'error': 'url must contain gameId parameter.'
+                                         'body must contain nickName field.'})
         }
 
-    # get current words list from DB
+    # get current players list from DB, check nickname uniqueness, and add nickname to players
     try:
         game = GameSession.get(hash_key=game_id)
-        words = game.words
+        players = game.players
+        if nickname in players:
+            return {
+                'statusCode': 409,
+                'body': json.dumps({'error': 'nickname already in use'})
+            }
+
+        game.players = players.append(nickname)
+        game.save()
 
         return {
-            'statusCode': 200,
-            'body': json.dumps({'status': words})
+            'statusCode': 200
         }
 
     except GameSession.DoesNotExist:

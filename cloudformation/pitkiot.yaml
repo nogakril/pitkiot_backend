@@ -74,11 +74,11 @@ Resources:
       LogGroupName: !Sub /aws/lambda/${GameCreatorLambdaFunction}
       RetentionInDays: 3
 
-  # Team Getter Lambda
-  TeamGetterLambdaRole:
+  # Player Adder Lambda
+  PlayerAdderLambdaRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: huji-lightricks-pitkiot-team-getter-lambda-role
+      RoleName: huji-lightricks-pitkiot-player-adder-lambda-role
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -90,7 +90,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: huji-lightricks-pitkiot-team-getter-lambda-policy
+        - PolicyName: huji-lightricks-pitkiot-player-adder-lambda-policy
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -105,12 +105,12 @@ Resources:
                 Resource:
                   - !GetAtt PitkiotTable.Arn
 
-  TeamGetterLambdaFunction:
+  PlayerAdderLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: huji-lightricks-pitkiot-team-getter-lambda
-      Handler: lambdas.team_getter.handler
-      Role: !GetAtt TeamGetterLambdaRole.Arn
+      FunctionName: huji-lightricks-pitkiot-player-adder-lambda
+      Handler: lambdas.player_adder.handler
+      Role: !GetAtt PlayerAdderLambdaRole.Arn
       Timeout: 25
       CodeUri:
         Bucket:
@@ -120,13 +120,12 @@ Resources:
       FunctionUrlConfig:
         AuthType: NONE
 
-
-  TeamGetterLambdaLogGroup:
+  PlayerAdderLambdaLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Retain
     DeletionPolicy: Delete
     Properties:
-      LogGroupName: !Sub /aws/lambda/${TeamGetterLambdaFunction}
+      LogGroupName: !Sub /aws/lambda/${PlayerAdderLambdaFunction}
       RetentionInDays: 3
 
   # Status Getter Lambda
@@ -382,12 +381,12 @@ Outputs:
     Export:
       Name: huji-lightricks-pitkiot-game-creator-lambda-url
 
-  TeamGetterLambdaURL:
-    Description: The URL of the team getter lambda
+  PlayerAdderLambdaURL:
+    Description: The URL of the player adder lambda
     Value:
-      Fn::GetAtt: TeamGetterLambdaFunctionUrl.FunctionUrl
+      Fn::GetAtt: PlayerAdderLambdaFunctionUrl.FunctionUrl
     Export:
-      Name: huji-lightricks-pitkiot-team-getter-lambda-url
+      Name: huji-lightricks-pitkiot-player-adder-lambda-url
 
   StatusSetterLambdaURL:
     Description: The URL of the status setter lambda
