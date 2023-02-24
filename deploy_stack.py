@@ -43,6 +43,7 @@ def deploy_cloudformation_template(
         cloudformation_client.describe_stacks(StackName=stack_name)
     except ClientError:
         should_create = True
+    print("should create = " + str(should_create))
 
     stack_parameters: Dict[str, Any] = {"PairName": pair_name, "CodePackageDate":str(now_ms)}
     formatted_parameters: List[Dict[str, Union[str, bool]]] = [
@@ -61,6 +62,7 @@ def _create_stack(
     template_file_path: str,
     formatted_parameters: List[Dict[str, Union[str, bool]]],
 ) -> None:
+    print("creating stack")
     template = _fetch_template(template_file_path)
 
     cloudformation_client.create_stack(
@@ -203,6 +205,7 @@ def _wait_on_stack_update(
             WaiterConfig={"Delay": 10, "MaxAttempts": 50},
         )
     except WaiterError as error:
+        print(error)
         raise ValueError(f"Failed to update stack {stack_name}") from error
 
     return _get_stack_status(stack_name)
@@ -329,11 +332,14 @@ def _cleanup() -> None:
 
 
 def get_lambdas_urls(stack_name_to_check: str) \
-        -> Tuple[Optional[str], Optional[str], Optional[str], Optional[str], Optional[str]]:
+        -> Tuple[Optional[str], Optional[str], Optional[str], Optional[str],
+                 Optional[str], Optional[str], Optional[str]]:
     cloudformation = boto3.resource("cloudformation", region_name=AWS_REGION)
     stack = cloudformation.Stack(stack_name_to_check)
     game_creator_url = None
     team_getter_url = None
+    status_setter_url = None
+    status_getter_url = None
     players_getter_url = None
     word_adder_url = None
     words_getter_url = None
@@ -342,6 +348,10 @@ def get_lambdas_urls(stack_name_to_check: str) \
             game_creator_url = output["OutputValue"]
         if output["OutputKey"] == "TeamGetterLambdaURL":
             team_getter_url = output["OutputValue"]
+        if output["OutputKey"] == "StatusSetterLambdaURL":
+            status_setter_url = output["OutputValue"]
+        if output["OutputKey"] == "StatusGetterLambdaURL":
+            status_getter_url = output["OutputValue"]
         if output["OutputKey"] == "PlayersGetterLambdaURL":
             players_getter_url = output["OutputValue"]
         if output["OutputKey"] == "WordAdderLambdaURL":
@@ -349,7 +359,9 @@ def get_lambdas_urls(stack_name_to_check: str) \
         if output["OutputKey"] == "WordsGetterLambdaURL":
             words_getter_url = output["OutputValue"]
 
-    return game_creator_url, team_getter_url, players_getter_url, word_adder_url, words_getter_url
+    return game_creator_url, team_getter_url, status_setter_url, status_getter_url, players_getter_url, word_adder_url,\
+        words_getter_url
+
 
 def main() -> None:
     # tell this script how to handle arguments
@@ -385,10 +397,12 @@ def main() -> None:
             template_file_path="./cloudformation/pitkiot.yaml",
         )
 
-        game_creator_url, team_getter_url, players_getter_url, word_adder_url, words_getter_url\
-            = get_lambdas_urls("huji-lightricks-pitkiot-resources")
+        game_creator_url, team_getter_url, status_setter_url, status_getter_url, players_getter_url,\
+            word_adder_url, words_getter_url = get_lambdas_urls("huji-lightricks-pitkiot-resources")
         print(f"Game creator lambda URL: {game_creator_url}")
         print(f"Team getter lambda URL: {team_getter_url}")
+        print(f"Status setter lambda URL: {status_setter_url}")
+        print(f"Status getter lambda URL: {status_getter_url}")
         print(f"Players getter lambda URL: {players_getter_url}")
         print(f"Word adder lambda URL: {word_adder_url}")
         print(f"Words getter lambda URL: {words_getter_url}")

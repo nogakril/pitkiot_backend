@@ -10,6 +10,10 @@ tags:
     description: Fetching a new game id
   - name: team-getter
     description: Fetching a new player's team
+  - name: status-setter
+    description: Set a game's status
+  - name: status-getter
+    description: Fetching a game's status
   - name: players-getter
     description: Fetching all of the game's players
   - name: word-adder
@@ -27,6 +31,12 @@ paths:
       summary: Generate a new Pitkiot game ID
       description: Generate a game ID, add it to the database and return this ID as a PIN used to join the game session
       operationId: gameCreator
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GameCreation'
+        required: true
       responses:
         '201':
           description: Successful operation
@@ -85,6 +95,53 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PlayersGetterResponse'
+  /status:
+    put:
+      servers:
+        - url: https://ENTER_STATUS_SETTER_LAMBDA_URL
+      tags:
+        - status-setter
+      summary: Set a game's status
+      description: Set a game's status in the DB given the game's ID
+      operationId: statusSetter
+      parameters:
+        - in: query
+          name: gameId
+          schema:
+            type: string
+          required: true
+          description: The game ID that was returned when the game creator was called
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusSetter'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+    get:
+      servers:
+        - url: https://ENTER_STATUS_GETTER_LAMBDA_URL
+      tags:
+        - status-getter
+      summary: Fetch a game's status
+      description: Get a game's status given the game's ID
+      operationId: statusGetter
+      parameters:
+        - in: query
+          name: gameId
+          schema:
+            type: string
+          required: true
+          description: The game ID that was returned when the game creator was called
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusGetterResponse'
   /words:
     put:
       servers:
@@ -134,6 +191,12 @@ paths:
                 $ref: '#/components/schemas/WordsGetterResponse'
 components:
   schemas:
+    GameCreation:
+      type: object
+      properties:
+        nickName:
+          type: string
+          example: "admin"
     GameCreationResponse:
       type: object
       properties:
@@ -155,6 +218,22 @@ components:
           enum:
             - red
             - blue
+    StatusSetter:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "adding players"
+          enum:
+            - "adding_players"
+            - "adding_words"
+            - "in_game"
+    StatusGetterResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "in_game"
     PlayersGetterResponse:
       type: object
       properties:

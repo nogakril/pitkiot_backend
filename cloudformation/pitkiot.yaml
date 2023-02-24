@@ -20,10 +20,6 @@ Resources:
       AttributeDefinitions:
         - AttributeName: game_id
           AttributeType: S
-        - AttributeName: players
-          AttributeType: SS
-        - AttributeName: words
-          AttributeType: SS
       KeySchema:
         - AttributeName: game_id
           KeyType: HASH
@@ -67,6 +63,8 @@ Resources:
           Fn::ImportValue: !Sub huji-lightricks-pitkiot-code-${PairName}-bucket-name
         Key: !Sub ${PairName}-${CodePackageDate}-code-package.zip
       Runtime: python3.8
+      FunctionUrlConfig:
+        AuthType: NONE
 
   GameCreatorLambdaLogGroup:
     Type: AWS::Logs::LogGroup
@@ -119,6 +117,9 @@ Resources:
           Fn::ImportValue: !Sub huji-lightricks-pitkiot-code-${PairName}-bucket-name
         Key: !Sub ${PairName}-${CodePackageDate}-code-package.zip
       Runtime: python3.8
+      FunctionUrlConfig:
+        AuthType: NONE
+
 
   TeamGetterLambdaLogGroup:
     Type: AWS::Logs::LogGroup
@@ -126,6 +127,104 @@ Resources:
     DeletionPolicy: Delete
     Properties:
       LogGroupName: !Sub /aws/lambda/${TeamGetterLambdaFunction}
+      RetentionInDays: 3
+
+  # Status Getter Lambda
+  StatusGetterLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: huji-lightricks-pitkiot-status-getter-lambda-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: huji-lightricks-pitkiot-status-getter-lambda-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt PitkiotTable.Arn
+
+  StatusGetterLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: huji-lightricks-pitkiot-status-getter-lambda
+      Handler: lambdas.status_getter.handler
+      Role: !GetAtt StatusGetterLambdaRole.Arn
+      Timeout: 25
+      CodeUri:
+        Bucket:
+          Fn::ImportValue: !Sub huji-lightricks-pitkiot-code-${PairName}-bucket-name
+        Key: !Sub ${PairName}-${CodePackageDate}-code-package.zip
+      Runtime: python3.8
+      FunctionUrlConfig:
+        AuthType: NONE
+
+  StatusGetterLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${StatusGetterLambdaFunction}
+      RetentionInDays: 3
+
+  # Status Setter Lambda
+  StatusSetterLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: huji-lightricks-pitkiot-status-setter-lambda-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: huji-lightricks-pitkiot-status-setter-lambda-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:UpdateItem
+                Resource:
+                  - !GetAtt PitkiotTable.Arn
+
+  StatusSetterLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: huji-lightricks-pitkiot-status-setter-lambda
+      Handler: lambdas.status_setter.handler
+      Role: !GetAtt StatusSetterLambdaRole.Arn
+      Timeout: 25
+      CodeUri:
+        Bucket:
+          Fn::ImportValue: !Sub huji-lightricks-pitkiot-code-${PairName}-bucket-name
+        Key: !Sub ${PairName}-${CodePackageDate}-code-package.zip
+      Runtime: python3.8
+      FunctionUrlConfig:
+        AuthType: NONE
+
+  StatusSetterLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${StatusSetterLambdaFunction}
       RetentionInDays: 3
 
   # Players Getter Lambda
@@ -166,6 +265,8 @@ Resources:
           Fn::ImportValue: !Sub huji-lightricks-pitkiot-code-${PairName}-bucket-name
         Key: !Sub ${PairName}-${CodePackageDate}-code-package.zip
       Runtime: python3.8
+      FunctionUrlConfig:
+        AuthType: NONE
 
   PlayersGetterLambdaLogGroup:
     Type: AWS::Logs::LogGroup
@@ -213,6 +314,8 @@ Resources:
           Fn::ImportValue: !Sub huji-lightricks-pitkiot-code-${PairName}-bucket-name
         Key: !Sub ${PairName}-${CodePackageDate}-code-package.zip
       Runtime: python3.8
+      FunctionUrlConfig:
+        AuthType: NONE
 
   WordAdderLambdaLogGroup:
     Type: AWS::Logs::LogGroup
@@ -260,6 +363,8 @@ Resources:
           Fn::ImportValue: !Sub huji-lightricks-pitkiot-code-${PairName}-bucket-name
         Key: !Sub ${PairName}-${CodePackageDate}-code-package.zip
       Runtime: python3.8
+      FunctionUrlConfig:
+        AuthType: NONE
 
   WordsGetterLambdaLogGroup:
     Type: AWS::Logs::LogGroup
@@ -268,3 +373,53 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${WordsGetterLambdaFunction}
       RetentionInDays: 3
+
+Outputs:
+  GameCreatorLambdaURL:
+    Description: The URL of the game creator lambda
+    Value:
+      Fn::GetAtt: GameCreatorLambdaFunctionUrl.FunctionUrl
+    Export:
+      Name: huji-lightricks-pitkiot-game-creator-lambda-url
+
+  TeamGetterLambdaURL:
+    Description: The URL of the team getter lambda
+    Value:
+      Fn::GetAtt: TeamGetterLambdaFunctionUrl.FunctionUrl
+    Export:
+      Name: huji-lightricks-pitkiot-team-getter-lambda-url
+
+  StatusSetterLambdaURL:
+    Description: The URL of the status setter lambda
+    Value:
+      Fn::GetAtt: StatusSetterLambdaFunctionUrl.FunctionUrl
+    Export:
+      Name: huji-lightricks-pitkiot-status-setter-lambda-url
+
+  StatusGetterLambdaURL:
+    Description: The URL of the status getter lambda
+    Value:
+      Fn::GetAtt: StatusGetterLambdaFunctionUrl.FunctionUrl
+    Export:
+      Name: huji-lightricks-pitkiot-status-getter-lambda-url
+
+  PlayersGetterLambdaURL:
+    Description: The URL of the players getter lambda
+    Value:
+      Fn::GetAtt: PlayersGetterLambdaFunctionUrl.FunctionUrl
+    Export:
+      Name: huji-lightricks-pitkiot-players-getter-lambda-url
+
+  WordAdderLambdaURL:
+    Description: The URL of the word adder lambda
+    Value:
+      Fn::GetAtt: WordAdderLambdaFunctionUrl.FunctionUrl
+    Export:
+      Name: huji-lightricks-pitkiot-word-adder-lambda-url
+
+  WordsGetterLambdaURL:
+    Description: The URL of the words getter lambda
+    Value:
+      Fn::GetAtt: WordsGetterLambdaFunctionUrl.FunctionUrl
+    Export:
+      Name: huji-lightricks-pitkiot-words-getter-lambda-url
