@@ -43,6 +43,13 @@ def handler(event: Dict[str, Any], _: Any) -> Dict[str, Any]:
     # get game session from DB and set the status
     try:
         game = GameSession.get(hash_key=game_id)
+
+        if len(game.players) < 2:
+            return {
+                'statusCode': 404,
+                'body': json.dumps({'error': 'game must have a least 2 players'})
+            }
+
         game.status = status
         game.save()
 
@@ -53,7 +60,7 @@ def handler(event: Dict[str, Any], _: Any) -> Dict[str, Any]:
     except GameSession.DoesNotExist:
         return {
             'statusCode': 404,
-            'body': json.dumps({'error': 'Given ID does not belong to an existing game'})
+            'body': json.dumps({'error': 'given ID does not belong to an existing game'})
         }
     except boto_exceptions.ClientError as e:
         return LambdaExceptionHandler.handle_client_error(e)
