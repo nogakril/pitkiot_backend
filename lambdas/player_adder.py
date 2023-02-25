@@ -35,14 +35,21 @@ def handler(event: Dict[str, Any], _: Any) -> Dict[str, Any]:
     # get current players list from DB, check nickname uniqueness, and add nickname to players
     try:
         game = GameSession.get(hash_key=game_id)
+        status = game.status
         players = game.players
+        if status != "adding_players":
+            return {
+                'statusCode': 409,
+                'body': json.dumps({'error': 'game session not in adding_players status'})
+            }
         if nickname in players:
             return {
                 'statusCode': 409,
                 'body': json.dumps({'error': 'nickname already in use'})
             }
 
-        game.players = players.append(nickname)
+        players.add(nickname)
+        game.players = players
         game.save()
 
         return {

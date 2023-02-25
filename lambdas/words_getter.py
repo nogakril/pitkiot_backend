@@ -32,11 +32,11 @@ def handler(event: Dict[str, Any], _: Any) -> Dict[str, Any]:
     # get current words list from DB
     try:
         game = GameSession.get(hash_key=game_id)
-        words = game.words
+        words = list(game.words)
 
         return {
             'statusCode': 200,
-            'body': json.dumps({'status': words})
+            'body': json.dumps({'words': words})
         }
 
     except GameSession.DoesNotExist:

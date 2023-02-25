@@ -250,6 +250,9 @@ def _create_code_package() -> None:
     Path(join(DEPLOY_PACKAGE_DIR, "models")).mkdir(parents=True, exist_ok=True)
     _copy_directory(join(BASE_DIRECTORY, "models"), join(DEPLOY_PACKAGE_DIR, "models"))
 
+    Path(join(DEPLOY_PACKAGE_DIR, "utils")).mkdir(parents=True, exist_ok=True)
+    _copy_directory(join(BASE_DIRECTORY, "utils"), join(DEPLOY_PACKAGE_DIR, "utils"))
+
     print("Installing Dependencies")
 
     subprocess.check_call(

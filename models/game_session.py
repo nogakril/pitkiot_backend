@@ -1,6 +1,6 @@
 import os
 
-from pynamodb.attributes import UnicodeAttribute
+from pynamodb.attributes import UnicodeAttribute, UnicodeSetAttribute
 from pynamodb.models import Model
 
 
@@ -13,5 +13,5 @@ class GameSession(Model):
         table_name = "huji-lightricks-pitkiot"
     game_id = UnicodeAttribute(hash_key=True)
     status = UnicodeAttribute(null=True)
-    players = UnicodeAttribute(null=True)
-    words = UnicodeAttribute(null=True)
+    players = UnicodeSetAttribute(null=True)
+    words = UnicodeSetAttribute(null=True)

@@ -69,10 +69,6 @@ paths:
       responses:
         '200':
           description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlayerAdderResponse'
     get:
       servers:
         - url: https://ENTER_PLAYERS_GETTER_LAMBDA_URL
@@ -202,22 +198,13 @@ components:
       properties:
         gameId:
           type: string
-          example: fd440257-1552-47e7-93a9-87d7f7ae60c8
+          example: 60c8
     PlayerAdder:
       type: object
       properties:
         nickName:
           type: string
           example: "omri abend"
-    PlayerAdderResponse:
-      type: object
-      properties:
-        team:
-          type: string
-          example: "red"
-          enum:
-            - red
-            - blue
     StatusSetter:
       type: object
       properties:

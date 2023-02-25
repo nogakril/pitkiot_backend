@@ -32,12 +32,7 @@ def handler(event: Dict[str, Any], _: Any) -> Dict[str, Any]:
     # get current players list from DB
     try:
         game = GameSession.get(hash_key=game_id)
-        players = game.players
-
-        # remove team suffix from nickname
-        for player in players:
-            player.rstrip('-red')
-            player.rstrip('-blue')
+        players = list(game.players)
 
         return {
             'statusCode': 200,

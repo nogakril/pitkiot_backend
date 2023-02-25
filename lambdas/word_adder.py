@@ -35,7 +35,20 @@ def handler(event: Dict[str, Any], _: Any) -> Dict[str, Any]:
     # add word to DB words list
     try:
         game = GameSession.get(hash_key=game_id)
-        game.words = game.words.append(word)
+        status = game.status
+        words = game.words
+
+        if status != "adding_words":
+            return {
+                'statusCode': 409,
+                'body': json.dumps({'error': 'game session not in adding_words status'})
+            }
+
+        if not words:
+            words = {word}
+        else:
+            words.add(word)
+        game.words = words
         game.save()
 
         return {
@@ -51,4 +64,3 @@ def handler(event: Dict[str, Any], _: Any) -> Dict[str, Any]:
         return LambdaExceptionHandler.handle_client_error(e)
     except boto_exceptions.EndpointConnectionError as e:
         return LambdaExceptionHandler.handle_general_error(e)
-      

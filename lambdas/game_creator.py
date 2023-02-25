@@ -2,6 +2,7 @@ import json
 from typing import Dict, Any
 import botocore.exceptions as boto_exceptions
 from uuid import uuid4
+from hashlib import sha256
 
 from models.game_session import GameSession
 from utils.lambda_exception_handler import LambdaExceptionHandler
@@ -23,19 +24,28 @@ def handler(event: Dict[str, Any], _: Any) -> Dict[str, Any]:
             'body': json.dumps({'error': 'only POST request allowed'})
         }
 
-    # create game ID
-    game_id = str(uuid4())
+    # Get nickname from body
+    nickname = json.loads(event.get('body', {})).get('nickName', '')
+    if not nickname:
+        return {
+            'statusCode': 400,
+            'body': json.dumps({'error': 'body must contain nickName field.'})
+        }
 
+    # create game ID
+    game_id = sha256(str(uuid4()).encode('utf-8')).hexdigest()[:4]
     try:
         # create new game in DB
         game = GameSession()
         game.game_id = game_id
         game.status = "adding_players"
+        game.players = [nickname]
         game.save()
+        print(f"game added: id- {game_id}, admin nickName- {nickname}")
 
         return {
             'statusCode': 201,
-            'body': json.dumps({'game_id': game_id})
+            'body': json.dumps({'gameId': game_id})
         }
 
     except boto_exceptions.ClientError as e:
