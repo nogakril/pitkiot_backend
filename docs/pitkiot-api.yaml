@@ -215,6 +215,7 @@ components:
             - "adding_players"
             - "adding_words"
             - "in_game"
+            - "game_ended"
     StatusGetterResponse:
       type: object
       properties:

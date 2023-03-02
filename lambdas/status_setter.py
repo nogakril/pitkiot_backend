@@ -11,7 +11,7 @@ def handler(event: Dict[str, Any], _: Any) -> Dict[str, Any]:
     Lambda handler for the status_setter lambda.
     Expected input: An event containing a REST API request, with a PUT method, a gameId query parameter
      and a JSON-formatted body containing a status field.
-     status field must be one of: adding_players, adding_words, in_game.
+     status field must be one of: adding_players, adding_words, in_game, game_ended.
     Expected output: An empty REST response.
      In case of an error, a status code and an informative message will be returned.
     """
@@ -33,22 +33,36 @@ def handler(event: Dict[str, Any], _: Any) -> Dict[str, Any]:
                                          'body must contain status field.'})
         }
 
-    if status not in ['adding_players', 'adding_words', 'in_game']:
+    if status not in ['adding_players', 'adding_words', 'in_game', 'game_ended']:
         return {
             'statusCode': 400,
             'body': json.dumps({'error': 'game status must be one of:'
-                                         'adding_players, adding_words, in_game'})
+                                         'adding_players, adding_words, in_game, game_ended'})
         }
 
     # get game session from DB and set the status
     try:
         game = GameSession.get(hash_key=game_id)
+        if game.status == "game_ended":
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'error': 'game session with this PIN has ended'})
+            }
 
+        # prevent game with less than 2 players (which is not enough for 2 teams)
         if len(game.players) < 2:
             return {
-                'statusCode': 404,
+                'statusCode': 400,
                 'body': json.dumps({'error': 'game must have a least 2 players'})
             }
+
+        # prevent starting game with less than 5 words
+        if status == "in_game":  # only relevant when starting game
+            if (not game.words) or (len(game.words) < 5):
+                return {
+                    'statusCode': 400,
+                    'body': json.dumps({'error': 'game must have a least 5 words'})
+                }
 
         game.status = status
         game.save()
@@ -60,7 +74,7 @@ def handler(event: Dict[str, Any], _: Any) -> Dict[str, Any]:
     except GameSession.DoesNotExist:
         return {
             'statusCode': 404,
-            'body': json.dumps({'error': 'given ID does not belong to an existing game'})
+            'body': json.dumps({'error': 'given PIN does not belong to an existing game'})
         }
     except boto_exceptions.ClientError as e:
         return LambdaExceptionHandler.handle_client_error(e)

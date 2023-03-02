@@ -42,7 +42,7 @@ def handler(event: Dict[str, Any], _: Any) -> Dict[str, Any]:
     except GameSession.DoesNotExist:
         return {
             'statusCode': 404,
-            'body': json.dumps({'error': 'Given ID does not belong to an existing game'})
+            'body': json.dumps({'error': 'Given PIN does not belong to an existing game'})
         }
     except boto_exceptions.ClientError as e:
         return LambdaExceptionHandler.handle_client_error(e)

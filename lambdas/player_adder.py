@@ -37,6 +37,12 @@ def handler(event: Dict[str, Any], _: Any) -> Dict[str, Any]:
         game = GameSession.get(hash_key=game_id)
         status = game.status
         players = game.players
+        if status == "game_ended":
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'error': 'game session with this PIN has ended'})
+            }
+
         if status != "adding_players":
             return {
                 'statusCode': 409,
@@ -59,7 +65,7 @@ def handler(event: Dict[str, Any], _: Any) -> Dict[str, Any]:
     except GameSession.DoesNotExist:
         return {
             'statusCode': 404,
-            'body': json.dumps({'error': 'Given ID does not belong to an existing game'})
+            'body': json.dumps({'error': 'Given PIN does not belong to an existing game'})
         }
     except boto_exceptions.ClientError as e:
         return LambdaExceptionHandler.handle_client_error(e)
