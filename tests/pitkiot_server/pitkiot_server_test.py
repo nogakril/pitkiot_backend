@@ -1,8 +1,8 @@
 import json
-import os
+
+import boto3
 import pytest
 import requests
-import boto3
 from botocore.config import Config
 
 # ------------------------------------------------- Test arguments -------------------------------------------------
@@ -95,6 +95,7 @@ def change_game_status_to_game_ended():
         ExpressionAttributeValues={':val': 'game_ended'}
     )
 
+
 # ----------------------------------------------------- Tests ------------------------------------------------------
 
 
@@ -112,8 +113,8 @@ def test_valid_game_creation():
 @pytest.mark.usefixtures("clear_dynamodb_table")
 def test_game_creation_with_wrong_method():
     response = requests.put(GAME_CREATOR_LAMBDA,
-                             headers={'Content-Type': 'application/json'},
-                             data=json.dumps({'nickName': 'TestUser'}))
+                            headers={'Content-Type': 'application/json'},
+                            data=json.dumps({'nickName': 'TestUser'}))
     assert response.status_code == 405
 
 
@@ -129,9 +130,9 @@ def test_create_game_without_admin_nickname():
 @pytest.mark.usefixtures("clear_dynamodb_table", "create_a_single_game")
 def test_player_addition():
     response = requests.put(PLAYER_ADDER_LAMBDA,
-                             params={'gameId': 'test'},
-                             headers={'Content-Type': 'application/json'},
-                             data=json.dumps({'nickName': 'TestUser'}))
+                            params={'gameId': 'test'},
+                            headers={'Content-Type': 'application/json'},
+                            data=json.dumps({'nickName': 'TestUser'}))
     assert response.status_code == 200
     item = table.get_item(Key={'game_id': 'test'})['Item']
     assert 'TestUser' in item['players']
@@ -149,35 +150,35 @@ def test_player_addition_with_wrong_method():
 @pytest.mark.usefixtures("clear_dynamodb_table", "create_a_single_game")
 def test_player_addition_without_game_id():
     response = requests.put(PLAYER_ADDER_LAMBDA,
-                             headers={'Content-Type': 'application/json'},
-                             data=json.dumps({'nickName': 'TestUser'}))
+                            headers={'Content-Type': 'application/json'},
+                            data=json.dumps({'nickName': 'TestUser'}))
     assert response.status_code == 400
 
 
 @pytest.mark.usefixtures("clear_dynamodb_table", "create_a_single_game")
 def test_player_addition_without_nickname():
     response = requests.put(PLAYER_ADDER_LAMBDA,
-                             params={'gameId': 'test'},
-                             headers={'Content-Type': 'application/json'},
-                             data=json.dumps({}))
+                            params={'gameId': 'test'},
+                            headers={'Content-Type': 'application/json'},
+                            data=json.dumps({}))
     assert response.status_code == 400
 
 
 @pytest.mark.usefixtures("clear_dynamodb_table", "create_a_single_game")
 def test_player_addition_with_invalid_game_id():
     response = requests.put(PLAYER_ADDER_LAMBDA,
-                             params={'gameId': 'tst1'},
-                             headers={'Content-Type': 'application/json'},
-                             data=json.dumps({'nickName': 'TestUser'}))
+                            params={'gameId': 'tst1'},
+                            headers={'Content-Type': 'application/json'},
+                            data=json.dumps({'nickName': 'TestUser'}))
     assert response.status_code == 404
 
 
 @pytest.mark.usefixtures("clear_dynamodb_table", "create_a_single_game")
 def test_player_addition_with_existing_nickname():
     response = requests.put(PLAYER_ADDER_LAMBDA,
-                             params={'gameId': 'test'},
-                             headers={'Content-Type': 'application/json'},
-                             data=json.dumps({'nickName': 'TestAdmin'}))
+                            params={'gameId': 'test'},
+                            headers={'Content-Type': 'application/json'},
+                            data=json.dumps({'nickName': 'TestAdmin'}))
     assert response.status_code == 409
 
 
@@ -191,9 +192,9 @@ def test_player_addition_while_in_invalid_game_status():
     )
 
     response = requests.put(PLAYER_ADDER_LAMBDA,
-                             params={'gameId': 'test'},
-                             headers={'Content-Type': 'application/json'},
-                             data=json.dumps({'nickName': 'TestUser'}))
+                            params={'gameId': 'test'},
+                            headers={'Content-Type': 'application/json'},
+                            data=json.dumps({'nickName': 'TestUser'}))
     assert response.status_code == 409
 
 
@@ -212,9 +213,9 @@ def test_player_addition_while_in_game_ended_status():
 @pytest.mark.usefixtures("clear_dynamodb_table", "create_a_game_with_2_players")
 def test_valid_status_set():
     response = requests.put(STATUS_SETTER_LAMBDA,
-                             params={'gameId': 'test'},
-                             headers={'Content-Type': 'application/json'},
-                             data=json.dumps({'status': 'adding_words'}))
+                            params={'gameId': 'test'},
+                            headers={'Content-Type': 'application/json'},
+                            data=json.dumps({'status': 'adding_words'}))
     assert response.status_code == 200
     item = table.get_item(Key={'game_id': 'test'})['Item']
     assert item['status'] == "adding_words"
@@ -232,35 +233,35 @@ def test_status_set_with_wrong_method():
 @pytest.mark.usefixtures("clear_dynamodb_table", "create_a_game_with_2_players")
 def test_status_set_without_game_id():
     response = requests.put(STATUS_SETTER_LAMBDA,
-                             headers={'Content-Type': 'application/json'},
-                             data=json.dumps({'status': 'adding_words'}))
+                            headers={'Content-Type': 'application/json'},
+                            data=json.dumps({'status': 'adding_words'}))
     assert response.status_code == 400
 
 
 @pytest.mark.usefixtures("clear_dynamodb_table", "create_a_game_with_2_players")
 def test_status_set_with_invalid_game_id():
     response = requests.put(STATUS_SETTER_LAMBDA,
-                             params={'gameId': 'tst1'},
-                             headers={'Content-Type': 'application/json'},
-                             data=json.dumps({'status': 'adding_words'}))
+                            params={'gameId': 'tst1'},
+                            headers={'Content-Type': 'application/json'},
+                            data=json.dumps({'status': 'adding_words'}))
     assert response.status_code == 404
 
 
 @pytest.mark.usefixtures("clear_dynamodb_table", "create_a_game_with_2_players")
 def test_status_set_without_status():
     response = requests.put(STATUS_SETTER_LAMBDA,
-                             params={'gameId': 'test'},
-                             headers={'Content-Type': 'application/json'},
-                             data=json.dumps({}))
+                            params={'gameId': 'test'},
+                            headers={'Content-Type': 'application/json'},
+                            data=json.dumps({}))
     assert response.status_code == 400
 
 
 @pytest.mark.usefixtures("clear_dynamodb_table", "create_a_single_game")
 def test_status_set_with_less_than_2_players():
     response = requests.put(STATUS_SETTER_LAMBDA,
-                             params={'gameId': 'test'},
-                             headers={'Content-Type': 'application/json'},
-                             data=json.dumps({'status': 'adding_words'}))
+                            params={'gameId': 'test'},
+                            headers={'Content-Type': 'application/json'},
+                            data=json.dumps({'status': 'adding_words'}))
     assert response.status_code == 400
 
 
@@ -295,7 +296,7 @@ def test_valid_get_status():
 @pytest.mark.usefixtures("clear_dynamodb_table", "create_a_single_game")
 def test_get_status_with_wrong_method():
     response = requests.post(STATUS_GETTER_LAMBDA,
-                            params={'gameId': 'test'})
+                             params={'gameId': 'test'})
     assert response.status_code == 405
 
 
@@ -346,12 +347,13 @@ def test_get_players_with_invalid_game_id():
 @pytest.mark.usefixtures("clear_dynamodb_table", "create_a_game_with_2_players_in_adding_words_status")
 def test_valid_word_addition():
     response = requests.put(WORD_ADDER_LAMBDA,
-                             params={'gameId': 'test'},
-                             headers={'Content-Type': 'application/json'},
-                             data=json.dumps({'word': 'addedWord'}))
+                            params={'gameId': 'test'},
+                            headers={'Content-Type': 'application/json'},
+                            data=json.dumps({'word': 'addedWord'}))
     assert response.status_code == 200
     item = table.get_item(Key={'game_id': 'test'})['Item']
     assert "addedWord" in item['words']
+
 
 @pytest.mark.usefixtures("clear_dynamodb_table", "create_a_game_with_2_players_in_adding_words_status")
 def test_word_addition_with_wrong_method():
@@ -365,26 +367,26 @@ def test_word_addition_with_wrong_method():
 @pytest.mark.usefixtures("clear_dynamodb_table", "create_a_game_with_2_players_in_adding_words_status")
 def test_word_addition_without_game_id():
     response = requests.put(WORD_ADDER_LAMBDA,
-                             headers={'Content-Type': 'application/json'},
-                             data=json.dumps({'word': 'addedWord'}))
+                            headers={'Content-Type': 'application/json'},
+                            data=json.dumps({'word': 'addedWord'}))
     assert response.status_code == 400
 
 
 @pytest.mark.usefixtures("clear_dynamodb_table", "create_a_game_with_2_players_in_adding_words_status")
 def test_word_addition_with_invalid_game_id():
     response = requests.put(WORD_ADDER_LAMBDA,
-                             params={'gameId': 'tst1'},
-                             headers={'Content-Type': 'application/json'},
-                             data=json.dumps({'word': 'addedWord'}))
+                            params={'gameId': 'tst1'},
+                            headers={'Content-Type': 'application/json'},
+                            data=json.dumps({'word': 'addedWord'}))
     assert response.status_code == 404
 
 
 @pytest.mark.usefixtures("clear_dynamodb_table", "create_a_game_with_2_players_in_adding_words_status")
 def test_word_addition_without_word():
     response = requests.put(WORD_ADDER_LAMBDA,
-                             params={'gameId': 'test'},
-                             headers={'Content-Type': 'application/json'},
-                             data=json.dumps({}))
+                            params={'gameId': 'test'},
+                            headers={'Content-Type': 'application/json'},
+                            data=json.dumps({}))
     assert response.status_code == 400
 
 
@@ -398,9 +400,9 @@ def test_word_addition_while_in_invalid_status():
     )
 
     response = requests.put(WORD_ADDER_LAMBDA,
-                             params={'gameId': 'test'},
-                             headers={'Content-Type': 'application/json'},
-                             data=json.dumps({'word': 'addedWord'}))
+                            params={'gameId': 'test'},
+                            headers={'Content-Type': 'application/json'},
+                            data=json.dumps({'word': 'addedWord'}))
     assert response.status_code == 409
 
 
@@ -408,9 +410,9 @@ def test_word_addition_while_in_invalid_status():
 def test_word_addition_with_game_ended_status():
     change_game_status_to_game_ended()
     response = requests.put(WORD_ADDER_LAMBDA,
-                             params={'gameId': 'test'},
-                             headers={'Content-Type': 'application/json'},
-                             data=json.dumps({'word': 'addedWord'}))
+                            params={'gameId': 'test'},
+                            headers={'Content-Type': 'application/json'},
+                            data=json.dumps({'word': 'addedWord'}))
     assert response.status_code == 409
 
 
@@ -418,7 +420,7 @@ def test_word_addition_with_game_ended_status():
 @pytest.mark.usefixtures("clear_dynamodb_table", "create_a_game_with_2_players_and_5_words")
 def test_valid_get_words():
     response = requests.get(WORDS_GETTER_LAMBDA,
-                             params={'gameId': 'test'})
+                            params={'gameId': 'test'})
     assert response.status_code == 200
     expected_words = {"one", "two", "three", "four", "five"}
     assert expected_words == set(response.json()['words'])
@@ -427,7 +429,7 @@ def test_valid_get_words():
 @pytest.mark.usefixtures("clear_dynamodb_table", "create_a_game_with_2_players_and_5_words")
 def test_get_words_with_wrong_method():
     response = requests.put(WORDS_GETTER_LAMBDA,
-                             params={'gameId': 'test'})
+                            params={'gameId': 'test'})
     assert response.status_code == 405
 
 
@@ -440,21 +442,5 @@ def test_get_words_without_game_id():
 @pytest.mark.usefixtures("clear_dynamodb_table", "create_a_game_with_2_players_and_5_words")
 def test_get_words_with_invalid_game_id():
     response = requests.get(WORDS_GETTER_LAMBDA,
-                             params={'gameId': 'tst1'})
+                            params={'gameId': 'tst1'})
     assert response.status_code == 404
-
-
-# --------------------------------------------------- game scenarios -------------------------------------------------
-@pytest.mark.usefixtures("clear_dynamodb_table")
-def test_valid_simple_game_session():
-    pass
-
-
-@pytest.mark.usefixtures("clear_dynamodb_table")
-def test_valid_two_concurrent_game_sessions():
-    pass
-
-
-@pytest.mark.usefixtures("clear_dynamodb_table")
-def test_multiple_invalid_requests_during_game_session():
-    pass

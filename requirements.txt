@@ -3,3 +3,4 @@ boto3==1.26.13
 pynamodb==5.3.2
 
 pytest~=7.2.1
+requests~=2.28.2

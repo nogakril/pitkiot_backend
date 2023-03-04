@@ -1,6 +1,6 @@
 import json
 from typing import Dict, Any
-import botocore.exceptions as boto_exceptions
+
 import pynamodb
 from pynamodb.exceptions import PynamoDBException
 

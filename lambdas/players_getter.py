@@ -1,11 +1,11 @@
 import json
 from typing import Dict, Any
-import botocore.exceptions as boto_exceptions
+
 import pynamodb
 from pynamodb.exceptions import PynamoDBException
 
-from utils.lambda_exception_handler import LambdaExceptionHandler
 from models.game_session import GameSession
+from utils.lambda_exception_handler import LambdaExceptionHandler
 
 
 def handler(event: Dict[str, Any], _: Any) -> Dict[str, Any]:
