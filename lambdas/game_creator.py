@@ -1,11 +1,13 @@
 import json
+
 from typing import Dict, Any
-import botocore.exceptions as boto_exceptions
 from uuid import uuid4
 from hashlib import sha256
 
 from models.game_session import GameSession
 from utils.lambda_exception_handler import LambdaExceptionHandler
+import pynamodb.exceptions
+from pynamodb.exceptions import PynamoDBException
 
 
 def handler(event: Dict[str, Any], _: Any) -> Dict[str, Any]:
@@ -19,36 +21,37 @@ def handler(event: Dict[str, Any], _: Any) -> Dict[str, Any]:
     # check REST method
     method = event.get('requestContext', {}).get('http', {}).get('method', '')
     if method != "POST":
-        return {
-            'statusCode': 405,
-            'body': json.dumps({'error': 'only POST request allowed'})
-        }
+        return LambdaExceptionHandler.handle_error(405, "Only POST request allowed")
 
     # Get nickname from body
     nickname = json.loads(event.get('body', {})).get('nickName', '')
     if not nickname:
-        return {
-            'statusCode': 400,
-            'body': json.dumps({'error': 'body must contain nickName field.'})
-        }
+        return LambdaExceptionHandler.handle_error(400, "Nickname must be provided to create a game")
 
     # create game ID
     game_id = sha256(str(uuid4()).encode('utf-8')).hexdigest()[:4]
+
+    # create game object
+    game = GameSession()
+    game.game_id = game_id
+    game.status = "adding_players"
+    game.players = [nickname]
+
     try:
-        # create new game in DB
-        game = GameSession()
-        game.game_id = game_id
-        game.status = "adding_players"
-        game.players = [nickname]
         game.save()
-        print(f"game added: id- {game_id}, admin nickName- {nickname}")
 
-        return {
-            'statusCode': 201,
-            'body': json.dumps({'gameId': game_id})
-        }
+    except GameSession.DoesNotExist:
+        return LambdaExceptionHandler.handle_error(404, 'Given PIN does not belong to an existing game')
 
-    except boto_exceptions.ClientError as e:
-        return LambdaExceptionHandler.handle_client_error(e)
-    except Exception as e:
-        return LambdaExceptionHandler.handle_general_error(e)
+    except pynamodb.exceptions.PynamoDBConnectionError:
+        return LambdaExceptionHandler.handle_error(503, 'Failed to connect. Please try again')
+
+    except PynamoDBException as e:
+        return LambdaExceptionHandler.handle_error(500, 'Internal Server Error')
+
+    print(f"game added: id- {game_id}, admin nickName- {nickname}")
+
+    return {
+        'statusCode': 201,
+        'body': json.dumps({'gameId': game_id})
+    }

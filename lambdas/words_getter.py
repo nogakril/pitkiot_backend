@@ -1,6 +1,8 @@
 import json
 from typing import Dict, Any
 import botocore.exceptions as boto_exceptions
+import pynamodb
+from pynamodb.exceptions import PynamoDBException
 
 from models.game_session import GameSession
 from utils.lambda_exception_handler import LambdaExceptionHandler
@@ -16,35 +18,29 @@ def handler(event: Dict[str, Any], _: Any) -> Dict[str, Any]:
     # check REST method
     method = event.get('requestContext', {}).get('http', {}).get('method', '')
     if method != "GET":
-        return {
-            'statusCode': 405,
-            'body': json.dumps({'error': 'only GET request allowed'})
-        }
+        return LambdaExceptionHandler.handle_error(405, "Only GET request allowed")
 
     # Get game ID from url
     game_id = event.get("queryStringParameters", {}).get("gameId")
     if not game_id:
-        return {
-            'statusCode': 400,
-            'body': json.dumps({'error': 'url must contain gameId parameter.'})
-        }
+        return LambdaExceptionHandler.handle_error(400, "Failed to process game PIN")
 
     # get current words list from DB
     try:
         game = GameSession.get(hash_key=game_id)
-        words = list(game.words)
-
-        return {
-            'statusCode': 200,
-            'body': json.dumps({'words': words})
-        }
 
     except GameSession.DoesNotExist:
-        return {
-            'statusCode': 404,
-            'body': json.dumps({'error': 'Given PIN does not belong to an existing game'})
-        }
-    except boto_exceptions.ClientError as e:
-        return LambdaExceptionHandler.handle_client_error(e)
-    except boto_exceptions.EndpointConnectionError as e:
-        return LambdaExceptionHandler.handle_general_error(e)
+        return LambdaExceptionHandler.handle_error(404, 'Given PIN does not belong to an existing game')
+
+    except pynamodb.exceptions.PynamoDBConnectionError:
+        return LambdaExceptionHandler.handle_error(503, 'Failed to connect. Please try again')
+
+    except PynamoDBException as e:
+        return LambdaExceptionHandler.handle_error(500, 'Internal Server Error')
+
+    words = list(game.words)
+
+    return {
+        'statusCode': 200,
+        'body': json.dumps({'words': words})
+    }

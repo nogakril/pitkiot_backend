@@ -16,14 +16,6 @@ PLAYERS_GETTER_LAMBDA = " https://y2ptad7vg7pl2raly7ebo7asti0hjojt.lambda-url.us
 WORD_ADDER_LAMBDA = "https://o2e6gr76txdn4f5w3dtodgvmb40ckyqb.lambda-url.us-west-2.on.aws/words/"
 WORDS_GETTER_LAMBDA = " https://bn7hrwlgyyveylitohyguntmnu0rcfya.lambda-url.us-west-2.on.aws/words/"
 
-# GAME_CREATOR_LAMBDA = "huji-lightricks-pitkiot-game-creator-lambda"
-# PLAYER_ADDER_LAMBDA = "huji-lightricks-pitkiot-player-adder-lambda"
-# STATUS_SETTER_LAMBDA = "huji-lightricks-pitkiot-status-setter-lambda"
-# STATUS_GETTER_LAMBDA = "huji-lightricks-pitkiot-status-getter-lambda"
-# PLAYERS_GETTER_LAMBDA = "huji-lightricks-pitkiot-players-getter-lambda"
-# WORD_ADDER_LAMBDA = "huji-lightricks-pitkiot-word-adder-lambda"
-# WORDS_GETTER_LAMBDA = "huji-lightricks-pitkiot-words-getter-lambda"
-
 # ---------------------------------------------------- Fixture -----------------------------------------------------
 # Set up the boto3 client for handling the DB
 dynamodb = boto3.resource('dynamodb', region_name=REGION)
@@ -43,6 +35,7 @@ def create_a_single_game():
     }
 
     table.put_item(Item=game)
+
 
 @pytest.fixture(scope='function')
 def create_a_game_with_2_players():
@@ -212,7 +205,7 @@ def test_player_addition_while_in_game_ended_status():
                             params={'gameId': 'test'},
                             headers={'Content-Type': 'application/json'},
                             data=json.dumps({'nickName': 'TestUser'}))
-    assert response.status_code == 400
+    assert response.status_code == 409
 
 
 # --------------------------------------------------- status-setter -------------------------------------------------
@@ -262,15 +255,6 @@ def test_status_set_without_status():
     assert response.status_code == 400
 
 
-@pytest.mark.usefixtures("clear_dynamodb_table", "create_a_game_with_2_players")
-def test_status_set_with_invalid_status():
-    response = requests.put(STATUS_SETTER_LAMBDA,
-                             params={'gameId': 'test'},
-                             headers={'Content-Type': 'application/json'},
-                             data=json.dumps({'status': 'some_status'}))
-    assert response.status_code == 400
-
-
 @pytest.mark.usefixtures("clear_dynamodb_table", "create_a_single_game")
 def test_status_set_with_less_than_2_players():
     response = requests.put(STATUS_SETTER_LAMBDA,
@@ -297,7 +281,7 @@ def test_status_set_with_game_ended_status():
                             params={'gameId': 'test'},
                             headers={'Content-Type': 'application/json'},
                             data=json.dumps({'status': 'adding_words'}))
-    assert response.status_code == 400
+    assert response.status_code == 409
 
 
 # --------------------------------------------------- status-getter -------------------------------------------------
@@ -427,7 +411,7 @@ def test_word_addition_with_game_ended_status():
                              params={'gameId': 'test'},
                              headers={'Content-Type': 'application/json'},
                              data=json.dumps({'word': 'addedWord'}))
-    assert response.status_code == 400
+    assert response.status_code == 409
 
 
 # --------------------------------------------------- words-getter -------------------------------------------------

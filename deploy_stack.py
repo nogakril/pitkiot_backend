@@ -62,7 +62,7 @@ def _create_stack(
     template_file_path: str,
     formatted_parameters: List[Dict[str, Union[str, bool]]],
 ) -> None:
-    print("creating stack")
+    print("Creating stack")
     template = _fetch_template(template_file_path)
 
     cloudformation_client.create_stack(

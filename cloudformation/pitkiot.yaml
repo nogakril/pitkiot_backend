@@ -97,10 +97,6 @@ Resources:
               - Effect: Allow
                 Action:
                   - dynamodb:PutItem
-                Resource:
-                  - !GetAtt PitkiotTable.Arn
-              - Effect: Allow
-                Action:
                   - dynamodb:GetItem
                 Resource:
                   - !GetAtt PitkiotTable.Arn
@@ -200,10 +196,6 @@ Resources:
               - Effect: Allow
                 Action:
                   - dynamodb:PutItem
-                Resource:
-                  - !GetAtt PitkiotTable.Arn
-              - Effect: Allow
-                Action:
                   - dynamodb:GetItem
                 Resource:
                   - !GetAtt PitkiotTable.Arn
@@ -303,10 +295,6 @@ Resources:
               - Effect: Allow
                 Action:
                   - dynamodb:PutItem
-                Resource:
-                  - !GetAtt PitkiotTable.Arn
-              - Effect: Allow
-                Action:
                   - dynamodb:GetItem
                 Resource:
                   - !GetAtt PitkiotTable.Arn

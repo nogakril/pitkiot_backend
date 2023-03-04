@@ -1,6 +1,8 @@
 import json
 from typing import Dict, Any
 import botocore.exceptions as boto_exceptions
+import pynamodb
+from pynamodb.exceptions import PynamoDBException
 
 from models.game_session import GameSession
 from utils.lambda_exception_handler import LambdaExceptionHandler
@@ -16,58 +18,60 @@ def handler(event: Dict[str, Any], _: Any) -> Dict[str, Any]:
     """
     # check REST method
     method = event.get('requestContext', {}).get('http', {}).get('method', '')
+
     if method != "PUT":
-        return {
-            'statusCode': 405,
-            'body': json.dumps({'error': 'only PUT request allowed'})
-        }
+        return LambdaExceptionHandler.handle_error(405, "Only PUT request allowed")
 
     # Get game ID from url, nickname from body
     game_id = event.get("queryStringParameters", {}).get("gameId")
     word = json.loads(event.get('body', {})).get('word', '')
-    if not game_id or not word:
-        return {
-            'statusCode': 400,
-            'body': json.dumps({'error': 'url must contain gameId parameter.'
-                                         'body must contain word field.'})
-        }
+    if not game_id:
+        return LambdaExceptionHandler.handle_error(400, "Failed to process game PIN")
+
+    if not word:
+        return LambdaExceptionHandler.handle_error(400, "Body must contain word field")
 
     # add word to DB words list
     try:
         game = GameSession.get(hash_key=game_id)
-        status = game.status
-
-        if status == "game_ended":
-            return {
-                'statusCode': 400,
-                'body': json.dumps({'error': 'game session with this PIN has ended'})
-            }
-
-        words = game.words
-
-        if status != "adding_words":
-            return {
-                'statusCode': 409,
-                'body': json.dumps({'error': 'game session not in adding_words status'})
-            }
-
-        if not words:
-            words = {word}
-        else:
-            words.add(word)
-        game.words = words
-        game.save()
-
-        return {
-            'statusCode': 200
-        }
 
     except GameSession.DoesNotExist:
-        return {
-            'statusCode': 404,
-            'body': json.dumps({'error': 'Given PIN does not belong to an existing game'})
-        }
-    except boto_exceptions.ClientError as e:
-        return LambdaExceptionHandler.handle_client_error(e)
-    except boto_exceptions.EndpointConnectionError as e:
-        return LambdaExceptionHandler.handle_general_error(e)
+        return LambdaExceptionHandler.handle_error(404, 'Given PIN does not belong to an existing game')
+
+    except pynamodb.exceptions.PynamoDBConnectionError:
+        return LambdaExceptionHandler.handle_error(503, 'Failed to connect. Please try again')
+
+    except PynamoDBException as e:
+        return LambdaExceptionHandler.handle_error(500, 'Internal Server Error')
+
+    status = game.status
+
+    if status == "game_ended":
+        return LambdaExceptionHandler.handle_error(409, "Game session with this PIN has ended")
+
+    words = game.words
+
+    if status != "adding_words":
+        return LambdaExceptionHandler.handle_error(409, "Can't currently add words to the game")
+
+    if not words:
+        words = {word}
+    else:
+        words.add(word)
+    game.words = words
+
+    try:
+        game.save()
+
+    except GameSession.DoesNotExist:
+        return LambdaExceptionHandler.handle_error(404, 'Given PIN does not belong to an existing game')
+
+    except pynamodb.exceptions.PynamoDBConnectionError:
+        return LambdaExceptionHandler.handle_error(503, 'Failed to connect. Please try again')
+
+    except PynamoDBException as e:
+        return LambdaExceptionHandler.handle_error(500, 'Internal Server Error')
+
+    return {
+        'statusCode': 200
+    }
